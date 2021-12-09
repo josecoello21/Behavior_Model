@@ -48,7 +48,8 @@ precio_dolar <- precio_dolar %>%
     mutate(Fecha = dmy(Fecha)) %>% 
     filter(Fecha %in% fechas) %>% 
     rename(fecha = Fecha,
-           dolar = Tipo_Cambio)
+           dolar = Tipo_Cambio
+           )
 
 # saldos dolarizados/saldo promedio dolarizado may20-oct20
 col_saldo <- contains(match = 'saldo', 
@@ -59,6 +60,35 @@ train <- avg_dolar(df_bs = train,
                    df_dolar = precio_dolar,
                    cols_saldos = col_saldo
                    )
+
+# suma de depositos en cuenta financiera
+dep_cuenta <- read_rds('data_sets_RDS/dep_cuenta.RDS')
+dep_cuenta <- data.table(dep_cuenta)
+
+# suma total de depositos en cuenta por cliente
+dep_total <- dep_cuenta[,lapply(.SD, sum, na.rm=TRUE),
+                        by = CEDULACOMPLETA,
+                        .SDcols = total_dep_may_20:total_dep_oct_20]
+
+# unificacion
+train <- train %>% 
+    left_join(y = dep_total, by = c('cedula' = 'CEDULACOMPLETA'))
+
+# depositos en cuenta dolarizado may20-oct20
+col_dep <- contains(match = '_dep_', 
+                    vars = names(train)
+                    )
+
+
+train <- avg_dolar(df_bs = train,
+                   df_dolar = precio_dolar,
+                   cols_saldos = col_dep
+                   )
+
+train <- train %>% 
+    rename(avg_saldo = avg_saldo...20,
+           avg_dep = avg_saldo...27
+           )
 
 # guardamos las modificaciones
 if(!file.exists('result/train_df.RDS')){
