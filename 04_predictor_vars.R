@@ -27,7 +27,7 @@ train %>%
          )
 
 # edad
-break_edad <- quantile(x = train$edad, 
+break_edad <- quantile(x = train$edad[train$edad <= 120], 
                        probs = seq(0,1,.2),
                        na.rm = T)
 train %>% 
@@ -54,7 +54,7 @@ train %>%
     gini(df = ., 
          x = 'nro_moras_obs', 
          y = 'status', 
-         breaks = c(0,1,3,5,6)
+         breaks = c(0,1,3,max(train$nro_moras_obs))
          )
 
 # avg_saldo
@@ -63,8 +63,22 @@ break_saldo <- train$avg_saldo %>%
     round(x = ., digits = 4)
 
 train %>% 
+    filter(!is.na(avg_saldo)) %>% 
     gini(df = ., 
          x = 'avg_saldo', 
          y = 'status', 
          breaks = break_saldo
          )
+
+# promedio de suma total depositos en cuenta (avg_dep)
+break_avg_dep <- train$avg_dep %>% 
+    quantile(probs = seq(0, 1, .2), na.rm = T) %>% 
+    round(digits = 4)
+
+train %>% 
+    filter(!is.na(avg_dep)) %>% 
+    gini(df = ., 
+         x = 'avg_dep', 
+         y = 'status', 
+         breaks = break_avg_dep
+    )
