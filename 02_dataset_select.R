@@ -2,111 +2,115 @@
 source('libraries_and_functions.R')
 
 # carga de base tdc
-base_tdc <- read_rds(file = 'data_sets_rds/tdc_abr21.RDS')
+base_tdc <- readRDS(file = 'data_sets_rds/tdc_abr21.RDS')
 
 # variables de interes
-columns <- c('T5NRTA','T5BINE','T5CDTI','T5UNNB','T5CDSE','T5DSEC',
-             'T5DSTR','T5PWNB','T5MQNB','T5T3NB','H3HSNB','H3HTNB')
-
-base_tdc <- base_tdc %>% 
-    select(contains(match = columns, vars = names(.) 
-                    ) 
-           ) %>% 
-    unite(col = 'cedula', c(T5CDTI,T5UNNB), sep = '') %>% 
-    rename(nro_tarjeta = T5NRTA,
-           bine        = T5BINE,
-           sexo        = T5CDSE,
-           edo_civil   = T5DSEC,
-           tipo_res    = T5DSTR,
-           fecha_nac   = T5PWNB,
-           fecha_emi   = T5MQNB,
-           nro_dep     = T5T3NB,
-           vc_2020     = H3HSNB,
-           vc_2021     = H3HTNB
-           )
+base_tdc[
+    , cedula := paste0(.SD, collapse = ''),
+    by = seq_along(T5CDTI),
+    .SDcols = c('T5CDTI', 'T5UNNB')
+][
+    , .('cedula' = cedula, 'nro_tarjeta' = T5NRTA, 'bine' = T5BINE,
+        'sexo' = T5CDSE, 'edo_civil' = T5DSEC, 'tipo_res' = T5DSTR,
+        'fecha_nac' = T5PWNB, 'fecha_emi' = T5MQNB, 'nro_dep' = T5T3NB, 
+        'vc_2020' = H3HSNB, 'vc_2021' = H3HTNB)
+] -> base_tdc
 
 # vectores de comp 12 caracteres 2020 y 4 caracteres 2021, solo tdc
-base_tdc <- base_tdc %>% 
-    mutate(vc_2020 = str_replace_all(string = vc_2020, 
-                                     pattern = '\\s', 
-                                     replacement = ''),
-           vc_2021 = str_replace_all(string = vc_2021, 
-                                     pattern = '\\s', 
-                                     replacement = '')
-           ) %>% 
-    filter(nchar(vc_2020) == 12, 
-           nchar(vc_2021) == 4, 
-           bine != '422169'
-           )
+base_tdc[
+    , `:=` (vc_2020 = gsub(pattern = '\\s',
+                           replacement = '',
+                           x = vc_2020
+                           ),
+            vc_2021 = gsub(pattern = '\\s',
+                           replacement = '',
+                           x = vc_2021
+                           )
+            )
+    ][
+        nchar(vc_2020) == 12 & nchar(vc_2021) == 4
+    ] -> base_tdc
 
 # reformateo de datos
-base_tdc <- base_tdc %>% 
-    mutate(sexo      = factor(sexo),
-           edo_civil = factor(edo_civil),
-           tipo_res  = factor(tipo_res),
-           fecha_nac = ymd(fecha_nac),
-           fecha_emi = ymd(fecha_emi)
-           )
+base_tdc[
+    , `:=` (sexo = factor(sexo),
+            edo_civil = factor(edo_civil),
+            tipo_res = factor(tipo_res),
+            fecha_nac = ymd(fecha_nac),
+            fecha_emi = ymd(fecha_emi)
+            )
+]
 
 # Exclusion de clientes oct20 (fecha divisoria) que se encuentran incumplidos
 incumplido <- '[3456789GHIJKLM]'
-base_tdc <- base_tdc %>% 
-    mutate(mora_oct_2020 = str_sub(string = vc_2020, 
-                                   start = 10, 
-                                   end = 10)
-           ) %>% 
-    filter(str_detect(string = mora_oct_2020, 
-                      pattern = incumplido, 
-                      negate = T)
-           )
+
+base_tdc[
+    , mora_oct_2020 := substr(x = vc_2020, start = 10, stop = 10)
+][
+    !grepl(pattern = incumplido, x = mora_oct_2020)
+] -> base_tdc
+
 # Etiqueta malos/buenos en el periodo de comportamiento nov20-abr21
-base_tdc <- base_tdc %>% 
-    mutate(mora_nov20_dic20 = str_sub(string = vc_2020, 
-                                      start = 11, 
-                                      end = 12),
-           mora_nov20_abr21 = paste0(mora_nov20_dic20, 
-                                     vc_2021),
-           status = str_detect(string = mora_nov20_abr21,
-                               pattern = incumplido),
-           status = factor(as.integer(status))
-           )
+base_tdc[
+    , `:=` (mora_nov20_dic20 = {tmp <- substr(x = vc_2020, 
+                                              start = 11, 
+                                              stop = 12); tmp},
+            mora_nov20_abr21 = {tmp2 <- paste0(tmp, vc_2021); tmp2},
+            status = {tmp3 <- grepl(pattern = incumplido, x = tmp2); 
+                      factor(as.integer(tmp3))
+                      }
+            )
+]
 
 # Edad y tiempo de la tarjeta
 fecha_obs <- ymd('2020-04-30')
-base_tdc <- base_tdc %>% 
-    mutate(edad = interval(start = fecha_nac, end = fecha_obs) %>% 
-               as.period %>% 
-               lubridate::year(),
-           antiguedad_tdc = interval(start = fecha_emi, end = fecha_obs) %>% 
-               as.period %>% 
-               lubridate::year()
-           )
+
+base_tdc[
+    , `:=` (edad = {tmp_age <- interval(start = fecha_nac, end = fecha_obs);
+                    tmp_age2 <- as.period(tmp_age); 
+                    lubridate::year(tmp_age2)
+                    },
+            antiguedad_tdc = {tmp_age_tdc <- interval(start = fecha_emi, end = fecha_obs);
+                              tmp_age_tdc2 <- as.period(tmp_age_tdc); 
+                              lubridate::year(tmp_age_tdc2)
+                              }
+            )
+]
+
 
 # Particion de datos entrenamiento 70% y prueba 30%
-size <- prod(nrow(base_tdc), .7) %>% trunc
+size <- prod(nrow(base_tdc), .7) |> trunc()
 
 # datos de entrenamiento
 set.seed(123)
-train <- sample_n(tbl = base_tdc, 
-                  size = size, 
-                  replace = F
-                  )
+# sample rows train data
+train_index <- sample(x = 1:nrow(base_tdc), size = size)
 
-# datos de prueba
-test <- base_tdc %>% 
-    anti_join(y = train, 
-              by = 'nro_tarjeta'
-              )
+# sample rows test data
+test_index <- c(1:nrow(base_tdc))[
+    !(1:nrow(base_tdc) %in% train_index)
+    ]
+
+# dt train
+base_tdc[ 
+    train_index 
+    ] -> dt_train
+
+# dt test
+base_tdc[
+    test_index
+] -> dt_test
+
 # guardamos la data tdc final, datos de entrenamiento y prueba
 if(!dir.exists('result')){
     dir.create('result')
 }
 
-files <- c('base_tdc.RDS','test.RDS','train.RDS')
+files <- c('base_tdc.RDS','dt_test.RDS','dt_train.RDS')
 
 test_file <- all(files %in% dir('result'))
 
 if(!test_file){
     paths <- file.path('result', files)
-    mapply(FUN = saveRDS, list(base_tdc, test, train), paths)
+    mapply(FUN = saveRDS, list(base_tdc, dt_test, dt_train), paths)
 }

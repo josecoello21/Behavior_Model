@@ -1,89 +1,103 @@
-library(tidyverse)
-library(readr)
+library(purrr)
 library(lubridate)
 library(data.table)
 
 # Saldo promedio dolarizado (semestral) 
-avg_dolar <- function(df_bs, df_dolar, cols_saldos){
+avg_dolar <- function(dt_bs, 
+                      dt_dolar, 
+                      cols_saldos,
+                      name_var = 'avg'){
+    # seleccion de columnas saldos
+    dt_bs[
+        , ..cols_saldos
+    ] -> dt_saldo_bs
     
-    df_saldo_bs <- df_bs %>% 
-        select(all_of(cols_saldos))
+    # re-arrange de base precio dolar
+    dcast(
+        data = dt_dolar,
+        . ~ fecha,
+        value.var = 'dolar'
+        )[,-c('.')] -> dt_dolar
     
-    df_dolar <- precio_dolar %>% 
-        spread(fecha, value = dolar)
+    # saldos dolarizados
+    map2_df(.x = dt_saldo_bs,
+            .y = dt_dolar, 
+            function(x,y){x/y}
+            ) |> 
+        as.data.table() -> dt_saldo_dolar
     
-    df_saldo_dolar <- map2_df(.x = df_saldo_bs, 
-                              .y = df_dolar, 
-                              function(x,y){x/y}
-                              ) %>% 
-        mutate(avg_saldo = apply(X = ., 
-                                 MARGIN = 1, 
-                                 function(x) mean(x, na.rm = T) 
-                                 ) 
-               )
+    # saldo promedio dolarizado
+    dt_saldo_dolar[
+        , c(name_var) := apply(X = .SD, MARGIN = 1, FUN = mean, na.rm = T)
+    ]
     
-    df_final <- bind_cols(df_bs %>% select(!all_of(cols_saldos)), 
-                          df_saldo_dolar)
+    cbind(dt_bs[,-..cols_saldos], dt_saldo_dolar)
 }
 
-# Gini 
-gini <- function(df, x, y, breaks = NULL){
+
+# Gini
+gini <- function(dt, x, y, breaks = NULL){
+    # check breaks, si grupos es nulo o se desea una agrupacion
     if(is.null(breaks)){
-        table_gini <- df %>% 
-            count(df[[x]], df[[y]]) %>% 
-            rename(status = `df[[y]]`) %>% 
-            spread(key = y, value = n) %>% 
-            mutate(across(2:3, ~ replace_na(., 0)),
-                   total = `0` + `1`,
-                   acu_buenos = cumsum(`0`)/sum(`0`),
-                   acu_malos = cumsum(`1`)/sum(`1`),
-                   x = c(acu_buenos[1], 
-                         acu_buenos %>% 
-                             map_at(.at = seq(1,length(unique(df[[x]])),2), 
-                                    function(x){x*-1}) %>% 
-                             unlist %>% 
-                             diff %>% 
-                             map_if(function(x){x<0}, 
-                                    function(y){y*-1}) %>% 
-                             unlist
-                         ),
-                   y = c(acu_malos[1], 
-                         acu_malos %>% 
-                             diff
-                         ),
-                   gini = abs(1 - sum(x*y)) 
-                   )
-        names(table_gini)[1] <- names(df[x])
+        # variables por agrupar
+        by_vars <- c(x,y)
+        dt[
+            , .N, by = by_vars
+        ] -> dt_gini
+        
+        # re-arrange
+        var_x <- x
+        var_y <- y
+        dcast(
+            data = dt_gini, 
+            get(var_x) ~ get(var_y),
+            value.var = 'N', 
+            fill = 0
+            ) -> dt_gini
+        
+        # calculo del gini
+        dt_gini[
+            , `:=` (total = {tmp <- `0` + `1`},
+                    acu_buenos = {tmp_good <- cumsum(`0`)/sum(`0`)},
+                    acu_malos = {tmp_bad <- cumsum(`1`)/sum(`1`)},
+                    acu_total = cumsum(tmp)/sum(tmp),
+                    x = {tmp_good2 <- c(0, tmp_good[ 1:(length(tmp_good)-1) ]);
+                         tmp_x <- tmp_good + tmp_good2},
+                    y = {tmp_y <- c(tmp_bad[1], diff(tmp_bad))},
+                    gini = abs(1 - sum(tmp_x * tmp_y))
+                    )
+        ]
     }else{
-        table_gini <- df %>% 
-            mutate(bins = cut(x = df[[x]],
-                              breaks = breaks,
-                              include.lowest = T, right = F)
-                   ) %>% 
-            count(bins, df[[y]]) %>% 
-            rename(status = `df[[y]]`) %>% 
-            spread(key = y, value = n) %>% 
-            mutate(across(2:3, ~ replace_na(., 0)),
-                   total = `0` + `1`,
-                   acu_buenos = cumsum(`0`)/sum(`0`),
-                   acu_malos = cumsum(`1`)/sum(`1`),
-                   x = c(acu_buenos[1], 
-                         acu_buenos %>% 
-                             map_at(.at = seq(1,length(breaks),2), 
-                                    function(x){x*-1}) %>% 
-                             unlist %>% 
-                             diff %>% 
-                             map_if(function(x){x<0}, 
-                                    function(y){y*-1}) %>% 
-                             unlist
-                         ),
-                   y = c(acu_malos[1], 
-                         acu_malos %>% 
-                             diff
-                         ),
-                   gini = abs(1 - sum(x*y))
-                   )
-        names(table_gini)[1] <- names(df[x])
+        # creacion de bins por agrupar
+        var_x <- x
+        var_y <- y
+        dt[
+            , bins := cut(x = get(var_x),
+                          breaks = breaks,
+                          include.lowest = T, right = F)
+        ][
+            , .N, by = .(bins, get(var_y))
+        ] -> dt_gini
+        
+        # re-arrange
+        dcast(
+            data = dt_gini,
+            bins ~ get,
+            value.var = 'N',
+            fill = 0
+        ) -> dt_gini
+        
+        # calculo del gini
+        dt_gini[
+            , `:=` (total = {tmp <- `0` + `1`},
+                    acu_buenos = {tmp_good <- cumsum(`0`)/sum(`0`)},
+                    acu_malos = {tmp_bad <- cumsum(`1`)/sum(`1`)},
+                    acu_total = cumsum(tmp)/sum(tmp),
+                    x = {tmp_good2 <- c(0, tmp_good[ 1:(length(tmp_good)-1) ]);
+                         tmp_x <- tmp_good + tmp_good2},
+                    y = {tmp_y <- c(tmp_bad[1], diff(tmp_bad))},
+                    gini = abs(1 - sum(tmp_x * tmp_y))
+                    )
+            ]
     }
-    return(table_gini)
 }
