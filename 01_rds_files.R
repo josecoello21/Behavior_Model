@@ -2,8 +2,8 @@
 source('libraries_and_functions.R')
 
 # workspace RDS data sets
-if(!dir.exists('data_sets_RDS')){
-    dir.create('data_sets_RDS')
+if(!dir.exists('data_sets_rds')){
+    dir.create('data_sets_rds')
 }
 
 # csv and txt files
@@ -20,8 +20,8 @@ txt_path <- file.path('data_sets', txt_file)
 datos_txt <- lapply(X = txt_path, FUN = read_delim)
 names(datos_txt) <- txt_file
 
-# save rds files in data_sets_RDS workspace
-files <- file.path('data_sets_RDS',
+# save rds files in data_sets_rds workspace
+files <- file.path('data_sets_rds',
                    gsub(pattern = 'csv|txt', 
                         replacement = 'RDS',
                         x = c(csv_file,txt_file) 
@@ -31,7 +31,7 @@ files_rds <- gsub(pattern = 'csv|txt',
                   replacement = 'RDS',
                   x = c(csv_file,txt_file) )
 
-test <- files_rds %in% dir('data_sets_RDS')
+test <- files_rds %in% dir('data_sets_rds')
 
 if(!all(test)){
     mapply(saveRDS, c(datos_csv, datos_txt), file = files)

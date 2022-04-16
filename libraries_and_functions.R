@@ -100,4 +100,5 @@ gini <- function(dt, x, y, breaks = NULL){
                     )
             ]
     }
+    return(dt_gini[1:nrow(dt_gini)])
 }

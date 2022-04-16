@@ -23,7 +23,8 @@ dt_train[
 ] -> dt_train
 
 # saldos promedios en cuenta
-avg_saldo <- readRDS('data_sets_rds/avg_saldos.RDS')
+avg_saldo <- readRDS('data_sets_rds/avg_saldos.RDS') |> 
+    as.data.table()
 
 # conversion de saldos de txt a numero
 avg_saldo[
@@ -70,7 +71,8 @@ merge.data.table(
 
 
 # referencia de control cambiario BCV
-precio_dolar <- read_rds('data_sets_rds/precio_dolar.RDS')
+precio_dolar <- readRDS('data_sets_rds/precio_dolar.RDS') |> 
+    as.data.table()
 
 fechas <- ymd(c('2020-05-29','2020-06-30','2020-07-31',
                 '2020-08-31','2020-09-30','2020-10-30'))
@@ -101,7 +103,8 @@ avg_dolar(
     ) -> dt_train
 
 # base depositos en cuenta financiera
-dep_cuenta <- read_rds('data_sets_rds/dep_cuenta.RDS')
+dep_cuenta <- readRDS('data_sets_rds/dep_cuenta.RDS') |> 
+    as.data.table()
 
 # conversion de depositos en cuenta de txt a numero
 dep_cuenta[

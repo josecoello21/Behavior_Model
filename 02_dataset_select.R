@@ -2,7 +2,8 @@
 source('libraries_and_functions.R')
 
 # carga de base tdc
-base_tdc <- readRDS(file = 'data_sets_rds/tdc_abr21.RDS')
+base_tdc <- readRDS(file = 'data_sets_rds/tdc_abr21.RDS') |> 
+    as.data.table()
 
 # variables de interes
 base_tdc[

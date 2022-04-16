@@ -2,83 +2,94 @@
 source('libraries_and_functions.R')
 
 # carga de datos de entrenamiento
-train <- read_rds('result/train_df.RDS')
+dt_train <- readRDS('result/dt_train2.RDS')
 
 # variables categoricas sexo, edo_civil y tipo_res
 var_categoricas <- c('sexo', 'edo_civil', 'tipo_res')
 
-gini_list <- mapply(FUN = gini, 
-                    list(train), 
-                    var_categoricas, 
-                    y = 'status', 
-                    SIMPLIFY = F
-                    )
+mapply(
+    FUN = gini,
+    list(dt_train),
+    var_categoricas, 
+    y = 'status', 
+    SIMPLIFY = F
+    ) -> gini_list
 
 names(gini_list) <- var_categoricas
 gini_list
 
+# reagrupacion tipo_res
+dt_train[
+    , tipo_res2 := {tmp <- ifelse(
+        as.character(tipo_res) %in% c('ARRENDADA', 'FAMILIAR', NA),
+        as.character(tipo_res),
+        'OTRO');
+    as.factor(tmp)}
+] |> gini(x = 'tipo_res2', y = 'status')
+
+
 # variables numericas discretas
 # nro_dep
-train %>% 
-    gini(df = ., 
-         x = 'nro_dep', 
-         y = 'status', 
-         breaks = c(0,3,100)
-         )
+dt_train |> 
+    gini(
+        x = 'nro_dep', 
+        y = 'status',
+        breaks = c(0,1,2,100)
+        )
 
 # edad
-break_edad <- quantile(x = train$edad[train$edad <= 120], 
-                       probs = seq(0,1,.2),
-                       na.rm = T)
-train %>% 
-    filter(edad <= 120) %>% 
-    gini(df = ., 
-         x = 'edad', 
-         y = 'status', 
-         breaks = break_edad
-         )
+with(
+    dt_train[edad <= 120],
+    quantile(x = edad, probs = seq(0, 1, .2), na.rm = T)
+    ) -> break_age
+
+dt_train[
+    edad <= 120
+    ] |> gini(x = 'edad', y = 'status', breaks = break_age)
 
 # antiguedad_tdc
-break_ages_tdc <- quantile(x = train$antiguedad_tdc,
-                           probs = seq(0,1,.25),
-                           na.rm = T)
-train %>% 
-    gini(df = ., 
-         x = 'antiguedad_tdc', 
-         y = 'status', 
-         breaks = unique(break_ages_tdc)
-         )
+with(
+    dt_train,
+    quantile(x = antiguedad_tdc, probs = seq(0, 1, .25), na.rm = T)
+    ) -> break_tdc
+
+gini(
+    dt = dt_train, 
+    x = 'antiguedad_tdc', 
+    y = 'status', 
+    breaks = break_tdc
+    )
 
 # nro_moras_obs
-train %>% 
-    gini(df = ., 
-         x = 'nro_moras_obs', 
-         y = 'status', 
-         breaks = c(0,1,3,max(train$nro_moras_obs))
-         )
+gini(
+    dt = dt_train,
+    x = 'nro_moras_obs', 
+    y = 'status',
+    breaks = c(0,1,2,100)
+    )
 
 # avg_saldo
-break_saldo <- train$avg_saldo %>% 
-    quantile(x = ., probs = seq(0,1,.2), na.rm = T) %>% 
-    round(x = ., digits = 4)
+with(
+    dt_train,
+    quantile(x = avg_saldo, probs = seq(0, 1, .2), na.rm = T)
+    ) -> break_saldo
 
-train %>% 
-    filter(!is.na(avg_saldo)) %>% 
-    gini(df = ., 
-         x = 'avg_saldo', 
-         y = 'status', 
-         breaks = break_saldo
-         )
+gini(
+    dt = dt_train, 
+    x = 'avg_saldo', 
+    y = 'status', 
+    breaks = break_saldo
+    )
 
 # promedio de suma total depositos en cuenta (avg_dep)
-break_avg_dep <- train$avg_dep %>% 
-    quantile(probs = seq(0, 1, .2), na.rm = T) %>% 
-    round(digits = 4)
+with(
+    dt_train,
+    quantile(x = avg_dep, probs = seq(0, 1, .2), na.rm = T)
+    ) |> round(digits = 4) -> break_dep
 
-train %>% 
-    filter(!is.na(avg_dep)) %>% 
-    gini(df = ., 
-         x = 'avg_dep', 
-         y = 'status', 
-         breaks = break_avg_dep
+gini(
+    dt = dt_train, 
+    x = 'avg_dep', 
+    y = 'status', 
+    breaks = break_dep
     )
