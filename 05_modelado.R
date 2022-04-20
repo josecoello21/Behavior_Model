@@ -74,3 +74,54 @@ glm(
     ) -> logit_model
 
 summary(logit_model)
+
+# predicciones
+lapply(
+    X = dt_woe, 
+    FUN = predict, 
+    object =logit_model, 
+    type = 'response'
+    ) -> predict_model
+
+mapply(
+    function(x,y){
+        x[
+            , prob := y  
+        ]},
+    dt_woe, predict_model, SIMPLIFY = F
+    ) -> dt_woe
+
+# gini model
+lapply(
+    X = predict_model, 
+    FUN = quantile, 
+    probs = seq(0,1,.1)
+    ) -> breaks
+
+mapply(
+    FUN = gini, 
+    dt = dt_woe, 
+    x = 'prob', 
+    y = 'status', 
+    breaks = breaks, 
+    SIMPLIFY = F
+    ) -> gini_model
+
+# otras metricas 
+mapply(
+    function(x,y){
+        perf_eva(
+            pred = x,
+            label = as.numeric(as.character(y$status)), 
+            threshold = 0.181
+            )
+        }, 
+    predict_model, 
+    dt_woe, 
+    SIMPLIFY = F
+    ) -> metrics
+
+
+
+
+
