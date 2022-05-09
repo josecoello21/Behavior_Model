@@ -25,7 +25,7 @@ dt_train[
         as.character(tipo_res),
         'OTRO');
     as.factor(tmp)}
-] |> gini(x = 'tipo_res2', y = 'status')
+    ] |> gini(x = 'tipo_res2', y = 'status')
 
 # Iv and woe values
 with(
@@ -61,7 +61,7 @@ dt_train[
                    breaks = break_age,
                    include.lowest = T,
                    right = F)
-]
+    ]
 
 woebin(
     dt = dt_train, 
@@ -71,34 +71,34 @@ woebin(
     )
 
 # antiguedad_tdc
-with(
-    dt_train,
-    quantile(x = antiguedad_tdc, probs = seq(0, 1, .25), na.rm = T)
-    ) -> break_tdc
-
-gini(
-    dt = dt_train, 
-    x = 'antiguedad_tdc', 
-    y = 'status', 
-    breaks = break_tdc
-    )
+# with(
+#     dt_train,
+#     quantile(x = antiguedad_tdc, probs = seq(0, 1, .25), na.rm = T)
+#     ) -> break_tdc
+# 
+# gini(
+#     dt = dt_train, 
+#     x = 'antiguedad_tdc', 
+#     y = 'status', 
+#     breaks = break_tdc
+#     )
 
 # Iv and woe values
-dt_train[
-    , antiguedad_tdc2 := cut(x = antiguedad_tdc,
-                             breaks = break_tdc,
-                             include.lowest = T,
-                             right = F)
-]
-
-woebin(
-    dt = dt_train, 
-    y = 'status', 
-    x = 'antiguedad_tdc2', 
-    breaks_list = list(
-        antiguedad_tdc2 = levels(dt_train$antiguedad_tdc2)
-        )
-    )
+# dt_train[
+#     , antiguedad_tdc2 := cut(x = antiguedad_tdc,
+#                              breaks = break_tdc,
+#                              include.lowest = T,
+#                              right = F)
+# ]
+# 
+# woebin(
+#     dt = dt_train, 
+#     y = 'status', 
+#     x = 'antiguedad_tdc2', 
+#     breaks_list = list(
+#         antiguedad_tdc2 = levels(dt_train$antiguedad_tdc2)
+#         )
+#     )
 
 # nro_moras_obs
 break_nro_mora <- c(0,1,2,100)
@@ -116,7 +116,7 @@ dt_train[
                             breaks = break_nro_mora,
                             include.lowest = T,
                             right = F)
-]
+    ]
 
 woebin(
     dt = dt_train, 
@@ -146,7 +146,7 @@ dt_train[
                         breaks = break_saldo,
                         include.lowest = T,
                         right = F)
-]
+    ]
 
 woebin(
     dt = dt_train, 
@@ -176,7 +176,7 @@ dt_train[
                       breaks = break_dep,
                       include.lowest = T,
                       right = F)
-]
+    ]
 
 woebin(
     dt = dt_train, 
@@ -187,7 +187,7 @@ woebin(
         )
     )
 
-# iv summary
+# iv and gini summary
 vars <- names(dt_train)[ grep(pattern = '2$', x = names(dt_train)) ]
 vars2 <- c(vars, 'status')
 
@@ -203,11 +203,17 @@ woebin(
     ) |> rbindlist() -> total_iv
 
 total_iv[
-    , lapply(.SD, FUN = unique), 
-    .SDcols = c('variable', 'total_iv')
+    ,.(variable, breaks, woe, total_iv)
     ][
         order(-total_iv)
-    ]
+    ] -> total_iv
+
+# total_iv[
+#     , lapply(.SD, FUN = unique), 
+#     .SDcols = c('variable', 'total_iv')
+#     ][
+#         order(-total_iv)
+#         ] -> total_iv
 
 # creacion de bins en dataset test
 dt_test <- readRDS('result/dt_test2.RDS')
@@ -222,10 +228,10 @@ dt_test[
                         breaks = break_age,
                         include.lowest = T,
                         right = F),
-            antiguedad_tdc2 = cut(x = antiguedad_tdc,
-                                  breaks = break_tdc,
-                                  include.lowest = T,
-                                  right = F),
+            # antiguedad_tdc2 = cut(x = antiguedad_tdc,
+            #                       breaks = break_tdc,
+            #                       include.lowest = T,
+            #                       right = F),
             nro_moras_obs2 = cut(x = nro_moras_obs,
                                  breaks = break_nro_mora,
                                  include.lowest = T,
@@ -239,19 +245,21 @@ dt_test[
                            include.lowest = T,
                            right = F)
             )
-] -> dt_test
+    ] -> dt_test
 
 # guardamos las modificaciones
 dt_sets <- list(
-    dt_train[, ..vars2], dt_test[, ..vars2]
+    dt_train[, ..vars2], dt_test[, ..vars2], total_iv
     )
 
-path_dataset <- c('result/dt_train3.RDS', 'result/dt_test3.RDS')
+path_dataset <- c('result/dt_train3.RDS', 
+                  'result/dt_test3.RDS', 
+                  'result/total_iv.RDS')
 
 test <- file.exists(
     path_dataset
-) |> all()
+    ) |> all()
 
 if(!test){
     mapply(FUN = saveRDS, dt_sets, path_dataset)
-}
+    }

@@ -113,6 +113,7 @@ mapply(
         perf_eva(
             pred = x,
             label = as.numeric(as.character(y$status)), 
+            confusion_matrix = TRUE,
             threshold = 0.181
             )
         }, 
@@ -121,7 +122,18 @@ mapply(
     SIMPLIFY = F
     ) -> metrics
 
+# guardamos las modificaciones
+path_dataset <- c('result/dt_train_woe.RDS', 
+                  'result/dt_test_woe.RDS', 
+                  'result/dt_balanced_woe.RDS')
 
+test <- file.exists(
+    path_dataset
+    ) |> all()
+
+if(!test){
+    mapply(FUN = saveRDS, dt_woe, path_dataset)
+}
 
 
 

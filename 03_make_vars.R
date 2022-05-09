@@ -25,8 +25,8 @@ lapply(X = dt_sets,
                        tmp5 <- sum(tmp4)}
                        ),
                by = nro_tarjeta
-           ]
-       }) -> dt_sets
+               ]
+           }) -> dt_sets
 
 # saldos promedios en cuenta
 avg_saldo <- readRDS('data_sets_rds/avg_saldos.RDS') |> 
@@ -37,7 +37,7 @@ avg_saldo[
     , lapply(.SD, unique),
     .SDcols = saldo_may_20:saldo_oct_20,
     by = cedula
-] -> avg_saldo
+    ] -> avg_saldo
 
 
 # filtro saldos mayo_20 a oct_20 NA
@@ -50,7 +50,7 @@ avg_saldo[
         }),
     .SDcols = saldo_may_20:saldo_oct_20,
     by = cedula
-] -> avg_saldo
+    ] -> avg_saldo
 
 
 # unificacion
@@ -74,15 +74,15 @@ fechas <- ymd(c('2020-05-29','2020-06-30','2020-07-31',
 # formato fecha variable fecha y formato numero a variable tipo_cambio
 precio_dolar[
     , Fecha := dmy(Fecha)
-][  # filtro de fechas de interes
-    Fecha %in% fechas, .(fecha = Fecha, dolar = Tipo_Cambio)
-] -> precio_dolar
+    ][  # filtro de fechas de interes
+        Fecha %in% fechas, .(fecha = Fecha, dolar = Tipo_Cambio)
+        ] -> precio_dolar
 
 
 # conversion de saldos bs a dolar y promedio de saldos dolarizados may20-oct20
 col_saldo <- names(dt_sets$dt_train)[
     grepl(pattern = 'saldo', x = names(dt_sets$dt_train))
-]
+    ]
 
 lapply(
     X = dt_sets, 
@@ -101,7 +101,7 @@ dep_cuenta[
     , lapply(.SD, unique),
     by = CEDULACOMPLETA,
     .SDcols = total_dep_may_20:total_dep_oct_20
-] -> dep_cuenta
+    ] -> dep_cuenta
 
 
 # filtro de depositos mayo_20 a oct_20 iguales a NA
@@ -112,7 +112,7 @@ dep_cuenta[
         }),
     .SDcols = total_dep_may_20:total_dep_oct_20,
     by = CEDULACOMPLETA
-] -> dep_cuenta
+    ] -> dep_cuenta
 
 # unificacion
 lapply(X = dt_sets, 
@@ -129,7 +129,7 @@ lapply(X = dt_sets,
 # depositos en cuenta dolarizado may20-oct20
 col_dep <- names(dt_sets$dt_train)[
     grepl(pattern = '_dep_', x = names(dt_sets$dt_train))
-]
+    ]
 
 lapply(
     X = dt_sets, 
@@ -148,4 +148,4 @@ test <- file.exists(
 
 if(!test){
     mapply(FUN = saveRDS, dt_sets, path_dataset2)
-}
+    }

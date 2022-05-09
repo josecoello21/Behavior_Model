@@ -3,6 +3,8 @@ library(lubridate)
 library(data.table)
 library(scorecard)
 library(ROSE)
+library(knitr)
+library(jtools)
 
 # Saldo promedio dolarizado (semestral) 
 avg_dolar <- function(dt_bs, 

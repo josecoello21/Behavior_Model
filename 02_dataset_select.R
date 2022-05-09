@@ -10,12 +10,12 @@ base_tdc[
     , cedula := paste0(.SD, collapse = ''),
     by = seq_along(T5CDTI),
     .SDcols = c('T5CDTI', 'T5UNNB')
-][
+    ][
     , .('cedula' = cedula, 'nro_tarjeta' = T5NRTA, 'bine' = T5BINE,
         'sexo' = T5CDSE, 'edo_civil' = T5DSEC, 'tipo_res' = T5DSTR,
         'fecha_nac' = T5PWNB, 'fecha_emi' = T5MQNB, 'nro_dep' = T5T3NB, 
         'vc_2020' = H3HSNB, 'vc_2021' = H3HTNB)
-] -> base_tdc
+    ] -> base_tdc
 
 # vectores de comp 12 caracteres 2020 y 4 caracteres 2021, solo tdc
 base_tdc[
@@ -30,7 +30,7 @@ base_tdc[
             )
     ][
         nchar(vc_2020) == 12 & nchar(vc_2021) == 4
-    ] -> base_tdc
+        ] -> base_tdc
 
 # reformateo de datos
 base_tdc[
@@ -40,16 +40,16 @@ base_tdc[
             fecha_nac = ymd(fecha_nac),
             fecha_emi = ymd(fecha_emi)
             )
-]
+    ]
 
 # Exclusion de clientes oct20 (fecha divisoria) que se encuentran incumplidos
 incumplido <- '[3456789GHIJKLM]'
 
 base_tdc[
     , mora_oct_2020 := substr(x = vc_2020, start = 10, stop = 10)
-][
-    !grepl(pattern = incumplido, x = mora_oct_2020)
-] -> base_tdc
+    ][
+        !grepl(pattern = incumplido, x = mora_oct_2020)
+        ] -> base_tdc
 
 # Etiqueta malos/buenos en el periodo de comportamiento nov20-abr21
 base_tdc[
@@ -61,7 +61,7 @@ base_tdc[
                       factor(as.integer(tmp3))
                       }
             )
-]
+    ]
 
 # Edad y tiempo de la tarjeta
 fecha_obs <- ymd('2020-04-30')
@@ -76,7 +76,7 @@ base_tdc[
                               lubridate::year(tmp_age_tdc2)
                               }
             )
-]
+    ]
 
 
 # Particion de datos entrenamiento 70% y prueba 30%
@@ -100,12 +100,12 @@ base_tdc[
 # dt test
 base_tdc[
     test_index
-] -> dt_test
+    ] -> dt_test
 
 # guardamos la data tdc final, datos de entrenamiento y prueba
 if(!dir.exists('result')){
     dir.create('result')
-}
+    }
 
 files <- c('base_tdc.RDS','dt_test.RDS','dt_train.RDS')
 
@@ -114,4 +114,4 @@ test_file <- all(files %in% dir('result'))
 if(!test_file){
     paths <- file.path('result', files)
     mapply(FUN = saveRDS, list(base_tdc, dt_test, dt_train), paths)
-}
+    }
