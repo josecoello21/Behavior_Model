@@ -1,6 +1,6 @@
 # Behavior_Model
 
-El Modelo de behavior de tarjetas de crédito tiene como objetivo estimar la probabilidad de incumplimiento de los tarjetahabientes en un período de tiempo, según su propensión de poder registrar una mora de noventa días o más en los próximos seis meses, lo cual permite al equipo de la VP Cobranzas y Recuperaciones optimizar la gestión de cobro, también este modelo suele ser una herramienta útil en los aumentos de límite de las tarjetas debido a que nos permite mitigar el riesgo de perdida debido al  incumplimiento.   
+El Modelo de behavior de tarjetas de crédito tiene como objetivo estimar la probabilidad de incumplimiento de los tarjetahabientes en un período de tiempo, según su propensión de poder registrar una mora de noventa días o más en los próximos seis meses, lo cual permite optimizar la gestión de cobro, también este modelo suele ser una herramienta útil en los aumentos de límite de las tarjetas debido a que nos permite mitigar el riesgo de perdida debido al  incumplimiento.   
 
 Para la realización del modelo se tomarán en cuenta los siguiente pasos:
 
@@ -17,3 +17,5 @@ Para la realización del modelo se tomarán en cuenta los siguiente pasos:
 6. Se evalúa la potencia discriminatoria de cada variable predictora construida en el paso anterior mediante el cálculo del coeficiente gini, luego se seleccionan las variables predictivas y se ajusta el modelo de regresión logística.
 
 7. Con los datos de prueba (30%), y el modelo final, se calculan las probabilidades de incumplimiento y se determina un gini de prueba.
+
+Documentación de los resultados generales [Rpubs](http://rpubs.com/josecoello21/898799)<base target="_top"/>
