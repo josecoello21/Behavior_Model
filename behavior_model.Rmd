@@ -1,5 +1,6 @@
 ---
 title: "Desarrollo de Modelo Behavior para TDC"
+author: 'Jose Coello'
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output:
   html_document:
@@ -123,7 +124,7 @@ base_tdc[
         ] -> base_tdc
 ```
 
-4. Se detecta la altura de mora alcanzada durante el período de desempeño (noviembre 2020 a abril 2021) y creamos la variable `Status` que nos indica si el cliente alcanzó un estado de mora menor a 90 días, si este es el caso se etiqueta como bueno = 0 ó si el cliente obtuvo una mora de 90 días o más, estos casos serán considerados como incumplido = 1.
+4. Se detecta la altura de mora alcanzada durante el período de desempeño (noviembre 2020 a abril 2021) y creamos la variable `status` que nos indica si el cliente alcanzó un estado de mora menor a 90 días, si este es el caso se etiqueta como bueno = 0 ó si el cliente obtuvo una mora de 90 días o más, estos casos serán considerados como incumplido = 1.
 
 ```{r eval=FALSE}
 # Etiqueta buenos/malos en el período de comportamiento nov20-abr21

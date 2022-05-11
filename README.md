@@ -18,4 +18,4 @@ Para la realización del modelo se tomarán en cuenta los siguiente pasos:
 
 7. Con los datos de prueba (30%), y el modelo final, se calculan las probabilidades de incumplimiento y se determina un gini de prueba.
 
-Documentación de los resultados generales [Rpubs](http://rpubs.com/josecoello21/898799)<base target="_top"/>
+Documentación de los resultados generales [Rpubs](http://rpubs.com/josecoello21/901188)<base target="_top"/>
